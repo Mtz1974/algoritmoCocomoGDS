@@ -72,6 +72,11 @@ RUN chown -R www-data:www-data /var/www/html/storage \
 COPY ./nginx/nginx.conf /etc/nginx/nginx.conf
 COPY ./nginx/supervisor.conf /etc/supervisor/conf.d/supervisor.conf
 
+# 💡 AÑADIR ESTA LÍNEA 💡
+# Cambia el usuario predeterminado de 'root' a 'www-data' para la ejecución final.
+USER www-data
+
+
 # Exponer el puerto de Nginx
 EXPOSE 80
 
