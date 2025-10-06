@@ -37,12 +37,11 @@ RUN composer install --no-dev --optimize-autoloader
 # RUN npm install
 # RUN npm run build
 
-# Generar caché de la aplicación y configuración
-RUN php artisan optimize:clear
-RUN php artisan config:cache
-RUN php artisan route:cache
-RUN php artisan view:cache
-
+# ⚠️ Elimina o comenta los comandos de caché. La APP_KEY no está disponible aquí.
+# RUN php artisan optimize:clear
+# RUN php artisan config:cache
+# RUN php artisan route:cache
+# RUN php artisan view:cache
 # ----------------------------------------------------------------------------------
 # ETAPA 2: PRODUCTION (Imagen final de producción)
 # Usamos una imagen ligera para servir la aplicación
