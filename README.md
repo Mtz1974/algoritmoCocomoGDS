@@ -1,46 +1,40 @@
-💻 Estimador de Costos COCOMO I
+# 💻 Estimador de Costos COCOMO I
 Este proyecto implementa el modelo COCOMO I (Constructive Cost Model) en un entorno Laravel/Blade para estimar el esfuerzo (persona-mes), la duración (meses) y el costo total de un proyecto de software, considerando el tamaño en KLOC y 15 factores de costo (EAF).
 
->✨ Características Destacadas
-Dark/Light Mode: Interfaz con selector de tema (Luna/Sol) que persiste la elección del usuario.
 
-Animaciones: Los resultados aparecen con un suave deslizamiento lateral y las tarjetas de estadísticas se revelan en una elegante cascada (staggered animation).
 
-Resultados Detallados: Muestra el Esfuerzo, Duración, Personas promedio y Costo Total, además de una tabla comparativa con los tres modos (Orgánico, Semiacoplado, Empotrado).
-
-Exportación a PDF: Generación de un reporte PDF profesional con los resultados y los multiplicadores utilizados.
-
->🛠️ Requisitos del Sistema
+# 🛠️ Requisitos del Sistema
 Necesitas tener instalado lo siguiente:
 
-1. PHP (versión 8.1 o superior).
+>1. PHP (versión 8.1 o superior).
 
-2. Composer (gestor de dependencias de PHP).
+>2. Composer (gestor de dependencias de PHP).
 
-3. Node.js y npm (para la gestión de recursos de frontend, aunque actualmente usa un CDN para Tailwind).
+>3. Node.js y npm (para la gestión de recursos de frontend, aunque actualmente usa un CDN para Tailwind).
 
-4. Laravel (el framework base del proyecto).
+>4. Laravel (el framework base del proyecto).
 
 >🚀 Pasos de Instalación y Configuración
-Sigue estos pasos para poner en marcha el proyecto:
 
-1. Clonar el Repositorio
+# Sigue estos pasos para poner en marcha el proyecto:
 
-2. git clone [(https://github.com/Mtz1974/algoritmoCocomoGDS)]
+>1. Clonar el Repositorio
 
-3. cd algoritmoCocomoGDS
+>2. git clone [(https://github.com/Mtz1974/algoritmoCocomoGDS)]
 
-Instalar Dependencias de PHP
+>3. cd algoritmoCocomoGDS
+
+# Instalar Dependencias de PHP
 
 Ejecuta Composer para instalar todas las librerías necesarias de Laravel:
 
-composer install
+>  # composer install
 
-Configurar el Entorno
+# Configurar el Entorno
 
-cp .env.example .env
+> # cp .env.example .env
 
-Ejemplo:
+# Ejemplo:
 DB_CONNECTION=mysql
 DB_HOST=127.0.0.1
 DB_PORT=3306
@@ -50,7 +44,13 @@ DB_PASSWORD=
 
 Genera la clave de aplicación de Laravel:
 
-php artisan key:generate
+> # php artisan key:generate
+
+
+# Ejecutar la Aplicación:
+Inicia el servidor de desarrollo local de Laravel:
+
+> # php artisan serve
 
 Instalar Dependencias de Frontend (Opcional, pero recomendado)
 Aunque la interfaz actual usa Tailwind CDN, si deseas usar assets locales o la versión de producción de Tailwind, instala Node.js:
@@ -63,10 +63,6 @@ npm run build # Para producción
 Levantar la base de datos:
 php artisan migrate 
 
-Ejecutar la Aplicación
-Inicia el servidor de desarrollo local de Laravel:
-
-php artisan serve
 
 
 >💡 Uso
