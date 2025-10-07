@@ -78,7 +78,9 @@ RUN chmod 644 /etc/nginx/nginx.conf /etc/supervisor/conf.d/supervisor.conf
 
 # 5. ❌ PASO ELIMINADO: Ya no necesitamos crear logs manualmente.
 #    (El paso #22 anterior se elimina aquí)
-
+# 5. CREAR CARPETA TEMP DE NGINX (Solución a exit status 1 en Alpine)
+RUN mkdir -p /var/cache/nginx/client_temp \
+    && chown -R www-data:www-data /var/cache/nginx
 # 6. FINAL: Forzar la ejecución de procesos como www-data
 USER www-data
 
