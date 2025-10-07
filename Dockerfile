@@ -1,11 +1,42 @@
 # ----------------------------------------------------------------------------------
+# ETAPA 1: BUILD (Construir la aplicación y sus assets)
 FROM php:8.2-fpm-alpine AS builder
-    # ETAPA 2: PRODUCTION (Imagen final de producción)
+
+# Instalar dependencias del sistema y extensiones de PHP
+RUN apk add --no-cache \
+    git \
+    curl \
+    unzip \
+    libzip-dev \
+    libpng-dev \
+    jpeg-dev \
+    freetype-dev \
+    oniguruma-dev \
+    supervisor \
+    && docker-php-ext-install pdo_mysql mbstring zip exif pcntl \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install gd
+
+# Instalar Composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+# 💡 CRÍTICO: Mover WORKDIR ANTES de COPY para solucionar el error de caché.
+WORKDIR /app
+
+# Copiar archivos y código fuente
+COPY . .
+
+# Instalar dependencias de PHP y optimizar (sin archivos de desarrollo)
+RUN composer install --no-dev --optimize-autoloader
+
+# ----------------------------------------------------------------------------------
+# ETAPA 2: PRODUCTION (Imagen final de producción)
 FROM php:8.2-fpm-alpine AS production
 
+# 💡 ASEGURAMOS USUARIO ROOT para instalar y gestionar archivos.
 USER root
 
-# 1. INSTALAR DEPENDENCIAS DE COMPILACIÓN Y EJECUCIÓN
+# 1. INSTALAR DEPENDENCIAS DE COMPILACIÓN Y EJECUCIÓN (soluciona oniguruma y GD)
 RUN apk add --no-cache --virtual .build-deps \
     libzip-dev \
     libpng-dev \
@@ -13,8 +44,7 @@ RUN apk add --no-cache --virtual .build-deps \
     freetype-dev \
     oniguruma-dev \
     \
-    # 💡 LIBRERÍAS DE EJECUCIÓN: Estas NO deben eliminarse.
-    #    Nginx, Supervisor y las librerías runtime de GD (libpng, libjpeg, freetype).
+    # LIBRERÍAS DE EJECUCIÓN: No se eliminan.
     && apk add --no-cache \
     nginx \
     supervisor \
@@ -27,15 +57,15 @@ RUN apk add --no-cache --virtual .build-deps \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install gd \
     \
-    # 2. LIMPIEZA: Solo eliminamos las dependencias de DESARROLLO (.build-deps)
+    # 2. LIMPIEZA: Solo eliminamos las dependencias de DESARROLLO
     && apk del .build-deps
 
-# Copiar el código final de la etapa de build
+# Copiar el código final de la etapa 'builder'
 COPY --from=builder /app /var/www/html
 
-# --- CONFIGURACIÓN DE PERMISOS Y USUARIOS ---
+# --- CONFIGURACIÓN DE PERMISOS Y USUARIOS (CRÍTICO) ---
 
-# 3. Dar permisos a storage y cache
+# 3. Dar permisos a storage y cache (Sin 'adduser' redundante)
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache \
     && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 
