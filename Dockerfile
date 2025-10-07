@@ -38,42 +38,53 @@ RUN composer install --no-dev --optimize-autoloader
 # ETAPA 2: PRODUCTION (Imagen final de producción)
 FROM php:8.2-fpm-alpine AS production
 
-# Instalar dependencias de ejecución (incluyendo Nginx)
-RUN apk add --no-cache \
+# 1. INSTALAR DEPENDENCIAS DE COMPILACIÓN Y EJECUCIÓN
+#    Instalamos temporalmente las librerías -dev para la compilación (oniguruma, etc.)
+RUN apk add --no-cache --virtual .build-deps \
+    libzip-dev \
+    libpng-dev \
+    jpeg-dev \
+    freetype-dev \
+    oniguruma-dev \
+    \
+    # Dependencias de ejecución (Nginx y Supervisor)
+    && apk add --no-cache \
     nginx \
     supervisor \
-    # Reinstalar extensiones para la imagen final
+    \
+    # Instalar y configurar extensiones de PHP
     && docker-php-ext-install pdo_mysql mbstring zip exif pcntl \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install gd
+    && docker-php-ext-install gd \
+    \
+    # 2. LIMPIEZA: Eliminar las dependencias de desarrollo (librerías -dev)
+    #    Esto mantiene la imagen ligera, solo quedan las extensiones compiladas.
+    && apk del .build-deps
 
 # Copiar el código final de la etapa de build
 COPY --from=build /app /var/www/html
 
 # --- CONFIGURACIÓN DE PERMISOS Y USUARIOS (CRÍTICO) ---
-# 1. Crear el usuario www-data (si no existe) y dar permisos a storage
+# 3. Dar permisos a storage y cache
 RUN adduser -D -u 82 www-data \
     && chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache \
     && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 
-# 2. Copiar la configuración de Nginx y Supervisor
+# 4. Copiar y asegurar permisos de configuración
 COPY ./nginx/nginx.conf /etc/nginx/nginx.conf
 COPY ./nginx/supervisor.conf /etc/supervisor/conf.d/supervisor.conf
-
-# 3. Asegurar permisos de lectura para los archivos de configuración
 RUN chmod 644 /etc/nginx/nginx.conf /etc/supervisor/conf.d/supervisor.conf
 
-# 4. PASO PARA EVITAR ERRORES DE LOGS: Crear el directorio de logs de Nginx
-#    Esto evita que Nginx falle al intentar escribir en un directorio inexistente o sin permisos.
+# 5. Crear el directorio de logs de Nginx para evitar fallas de permisos al iniciar
 RUN mkdir -p /var/log/nginx \
     && touch /var/log/nginx/error.log \
     && chown -R www-data:www-data /var/log/nginx
 
-# 5. Forzar la ejecución de procesos como www-data
+# 6. Forzar la ejecución de procesos como www-data
 USER www-data
 
 # Exponer el puerto de Nginx
 EXPOSE 80
 
-# Comando para iniciar Supervisor (que a su vez inicia Nginx y PHP-FPM)
+# Comando para iniciar Supervisor
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisor.conf"]
