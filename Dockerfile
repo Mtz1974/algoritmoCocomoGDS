@@ -20,7 +20,7 @@ RUN apk add --no-cache \
 # Instalar Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# 💡 CRÍTICO: Mover WORKDIR ANTES de COPY para solucionar el error de caché.
+# 💡 Mover WORKDIR ANTES de COPY mejora la caché
 WORKDIR /app
 
 # Copiar archivos y código fuente
@@ -30,14 +30,13 @@ COPY . .
 RUN composer install --no-dev --optimize-autoloader
 
 # ----------------------------------------------------------------------------------
-# ----------------------------------------------------------------------------------
-# ETAPA 2: PRODUCTION (Imagen final de producción)
+# ETAPA 2: PRODUCCIÓN
 FROM php:8.2-fpm-alpine AS production
 
-# ASEGURAMOS USUARIO ROOT para instalar y gestionar archivos.
+# Aseguramos que corra como root durante instalación
 USER root
 
-# 1. INSTALAR DEPENDENCIAS DE COMPILACIÓN Y EJECUCIÓN
+# 1️⃣ Instalar dependencias del sistema y librerías necesarias
 RUN apk add --no-cache --virtual .build-deps \
     libzip-dev \
     libpng-dev \
@@ -45,7 +44,6 @@ RUN apk add --no-cache --virtual .build-deps \
     freetype-dev \
     oniguruma-dev \
     \
-    # LIBRERÍAS DE EJECUCIÓN (permanecen):
     && apk add --no-cache \
     nginx \
     supervisor \
@@ -54,52 +52,41 @@ RUN apk add --no-cache --virtual .build-deps \
     freetype \
     libzip \
     \
-    # Instalar y configurar extensiones de PHP
     && docker-php-ext-install pdo_mysql mbstring zip exif pcntl \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install gd \
     \
-    # 2. LIMPIEZA: Solo eliminamos las dependencias de DESARROLLO
     && apk del .build-deps
 
-# Copiar el código final de la etapa 'builder'
+# 2️⃣ Copiar el código desde la etapa builder
 COPY --from=builder /app /var/www/html
 
-# --- CONFIGURACIÓN DE PERMISOS Y USUARIOS (CRÍTICO) ---
-
-# 3. Dar permisos a storage y cache
+# 3️⃣ Permisos necesarios para Laravel
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache \
     && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 
-# 4. Copiar y asegurar permisos de configuración
+# 4️⃣ Copiar configuraciones de Nginx y Supervisor
 COPY ./nginx/nginx.conf /etc/nginx/nginx.conf
 COPY ./nginx/supervisor.conf /etc/supervisor/conf.d/supervisor.conf
 RUN chmod 644 /etc/nginx/nginx.conf /etc/supervisor/conf.d/supervisor.conf
 
-# 4.5. 🚨 SOLUCIÓN FINAL PERMISOS NGINX ALPINES 🚨
-# Nginx intenta acceder a estas rutas POR DEFECTO antes de leer el nginx.conf,
-# causando Permission Denied. Les damos permisos al usuario www-data.
+# 5️⃣ FIX: Permisos de Nginx y logs (evita el “Permission denied”)
 RUN mkdir -p /var/lib/nginx/logs /var/lib/nginx/tmp/scgi \
     && chown -R www-data:www-data /var/lib/nginx
 
-# 5. CREAR LA CARPETA TEMPORAL EXACTA ANTES DE LA PRUEBA DE NGINX
-# ✅ CRÍTICO: Debe coincidir con las rutas en nginx.conf.
-RUN mkdir -p /var/www/html/tmp/client_temp \
-    /var/www/html/tmp/proxy_temp \
-    /var/www/html/tmp/fastcgi_temp \
-    /var/www/html/tmp/uwsgi_temp \
-    /var/www/html/tmp/scgi_temp \
-    && chown -R www-data:www-data /var/www/html/tmp
+# 6️⃣ FIX DEFINITIVO PARA RENDER:
+# Crear las rutas temporales accesibles para Nginx en /opt/render/project/src/tmp/
+RUN mkdir -p /opt/render/project/src/tmp/{client_temp,proxy_temp,fastcgi_temp,uwsgi_temp} \
+    && chown -R www-data:www-data /opt/render/project/src/tmp
 
-# 6. DIAGNÓSTICO CRÍTICO: Prueba la configuración de Nginx y muestra errores de sintaxis
-# Si esta prueba pasa (syntax is ok), Nginx arrancará.
-RUN nginx -t
+# 7️⃣ Verificar sintaxis de Nginx antes del deploy
+RUN nginx -t || cat /var/log/nginx/error.log || true
 
-# 7. FINAL: Forzar la ejecución de procesos como www-data
+# 8️⃣ Cambiar usuario para ejecución final (seguridad)
 USER www-data
 
-# Exponer el puerto de Nginx
+# 9️⃣ Exponer el puerto web
 EXPOSE 80
 
-# Comando para iniciar Supervisor
+# 🔟 Iniciar todos los procesos con Supervisor
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisor.conf"]
