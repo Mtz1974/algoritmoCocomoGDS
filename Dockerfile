@@ -76,13 +76,14 @@ COPY ./nginx/nginx.conf /etc/nginx/nginx.conf
 COPY ./nginx/supervisor.conf /etc/supervisor/conf.d/supervisor.conf
 RUN chmod 644 /etc/nginx/nginx.conf /etc/supervisor/conf.d/supervisor.conf
 
-# 5. DIAGNÓSTICO CRÍTICO: Prueba la configuración de Nginx y muestra errores de sintaxis
-# Si esta prueba falla, el log del build mostrará la línea exacta del error.
-RUN nginx -t
+# 5. CREAR LA CARPETA TEMPORAL EXACTA ANTES DE LA PRUEBA DE NGINX
+# ✅ CRÍTICO: Debe coincidir con 'client_body_temp_path' en nginx.conf.
+RUN mkdir -p /var/www/html/tmp/client_temp \
+    && chown -R www-data:www-data /var/www/html/tmp
 
-# 6. CREAR CARPETA TEMP DE NGINX (Solución a exit status 1 en Alpine)
-RUN mkdir -p /var/cache/nginx/client_temp \
-    && chown -R www-data:www-data /var/cache/nginx
+# 6. DIAGNÓSTICO CRÍTICO: Prueba la configuración de Nginx y muestra errores de sintaxis
+# Si esta prueba pasa (syntax is ok), Nginx arrancará.
+RUN nginx -t
 
 # 7. FINAL: Forzar la ejecución de procesos como www-data
 USER www-data
