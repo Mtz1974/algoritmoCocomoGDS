@@ -79,8 +79,10 @@ RUN chmod 644 /etc/nginx/nginx.conf /etc/supervisor/conf.d/supervisor.conf
 # 5. CREAR LA CARPETA TEMPORAL EXACTA ANTES DE LA PRUEBA DE NGINX
 # ✅ CRÍTICO: Debe coincidir con 'client_body_temp_path' en nginx.conf.
 RUN mkdir -p /var/www/html/tmp/client_temp \
+    /var/www/html/tmp/proxy_temp \
+    /var/www/html/tmp/fastcgi_temp \
+    /var/www/html/tmp/uwsgi_temp \
     && chown -R www-data:www-data /var/www/html/tmp
-
 # 6. DIAGNÓSTICO CRÍTICO: Prueba la configuración de Nginx y muestra errores de sintaxis
 # Si esta prueba pasa (syntax is ok), Nginx arrancará.
 RUN nginx -t
