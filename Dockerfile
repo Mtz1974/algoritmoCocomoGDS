@@ -74,8 +74,8 @@ RUN chmod 644 /etc/nginx/nginx.conf /etc/supervisor/conf.d/supervisor.conf
 # Evita el "Permission denied" en /var/lib/nginx/logs/error.log
 RUN mkdir -p /var/lib/nginx/logs /var/lib/nginx/tmp /var/tmp/nginx \
     && touch /var/lib/nginx/logs/error.log \
-    && chmod -R 777 /var/lib/nginx /var/tmp/nginx
-
+    && chown -R www-data:www-data /var/lib/nginx /var/tmp/nginx \
+    && chmod -R 755 /var/lib/nginx /var/tmp/nginx
 # 6️⃣ Crear las rutas temporales requeridas por Render
 RUN mkdir -p /opt/render/project/src/tmp/{client_temp,proxy_temp,fastcgi_temp,uwsgi_temp} \
     && chmod -R 777 /opt/render/project/src/tmp
