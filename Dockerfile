@@ -1,5 +1,6 @@
 # ----------------------------------------------------------------------------------
-# ETAPA 2: PRODUCTION (Imagen final de producción)
+FROM php:8.2-fpm-alpine AS builder
+    # ETAPA 2: PRODUCTION (Imagen final de producción)
 FROM php:8.2-fpm-alpine AS production
 
 USER root
