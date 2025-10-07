@@ -76,14 +76,21 @@ COPY ./nginx/nginx.conf /etc/nginx/nginx.conf
 COPY ./nginx/supervisor.conf /etc/supervisor/conf.d/supervisor.conf
 RUN chmod 644 /etc/nginx/nginx.conf /etc/supervisor/conf.d/supervisor.conf
 
+# 4.5. 🚨 SOLUCIÓN FINAL PERMISOS NGINX ALPINES 🚨
+# Nginx intenta acceder a estas rutas POR DEFECTO antes de leer el nginx.conf,
+# causando Permission Denied. Les damos permisos al usuario www-data.
+RUN mkdir -p /var/lib/nginx/logs /var/lib/nginx/tmp/scgi \
+    && chown -R www-data:www-data /var/lib/nginx
+
 # 5. CREAR LA CARPETA TEMPORAL EXACTA ANTES DE LA PRUEBA DE NGINX
-# ✅ CRÍTICO: Debe coincidir con 'client_body_temp_path' en nginx.conf.
+# ✅ CRÍTICO: Debe coincidir con las rutas en nginx.conf.
 RUN mkdir -p /var/www/html/tmp/client_temp \
     /var/www/html/tmp/proxy_temp \
     /var/www/html/tmp/fastcgi_temp \
     /var/www/html/tmp/uwsgi_temp \
     /var/www/html/tmp/scgi_temp \
     && chown -R www-data:www-data /var/www/html/tmp
+
 # 6. DIAGNÓSTICO CRÍTICO: Prueba la configuración de Nginx y muestra errores de sintaxis
 # Si esta prueba pasa (syntax is ok), Nginx arrancará.
 RUN nginx -t
