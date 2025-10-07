@@ -20,7 +20,6 @@ RUN apk add --no-cache \
 # Instalar Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# 💡 Mover WORKDIR ANTES de COPY mejora la caché
 WORKDIR /app
 
 # Copiar archivos y código fuente
@@ -47,33 +46,38 @@ RUN apk add --no-cache --virtual .build-deps \
 # 2️⃣ Copiar la aplicación
 COPY --from=builder /app /var/www/html
 
-# 3️⃣ Permisos de Laravel
-RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache \
-    && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
+# 3️⃣ Crear directorios necesarios y asignar permisos
+RUN mkdir -p /var/www/html/storage \
+    /var/www/html/bootstrap/cache \
+    /var/www/html/logs \
+    /tmp/nginx_client_temp \
+    /tmp/nginx_proxy_temp \
+    /tmp/nginx_fastcgi_temp \
+    /tmp/nginx_uwsgi_temp \
+    /tmp/nginx_scgi_temp \
+    && chown -R www-data:www-data \
+    /var/www/html/storage \
+    /var/www/html/bootstrap/cache \
+    /var/www/html/logs \
+    /tmp/nginx_* \
+    && chmod -R 775 \
+    /var/www/html/storage \
+    /var/www/html/bootstrap/cache \
+    /var/www/html/logs \
+    /tmp/nginx_*
 
 # 4️⃣ Copiar configuraciones
 COPY ./nginx/nginx.conf /etc/nginx/nginx.conf
 COPY ./nginx/supervisor.conf /etc/supervisor/conf.d/supervisor.conf
-RUN chmod 644 /etc/nginx/nginx.conf /etc/supervisor/conf.d/supervisor.conf
 
-# 5️⃣ FIX: crear rutas de logs y tmp con permisos válidos
-RUN mkdir -p /var/www/html/logs \
-    && mkdir -p /var/lib/nginx/tmp/scgi \
-    && chown -R www-data:www-data /var/www/html/logs /var/lib/nginx/tmp \
-    && chmod -R 775 /var/www/html/logs /var/lib/nginx/tmp
+# 5️⃣ Verificar sintaxis de Nginx
+RUN nginx -t
 
-# 6️⃣ Rutas temporales necesarias para Render
-RUN mkdir -p /opt/render/project/src/tmp/{client_temp,proxy_temp,fastcgi_temp,uwsgi_temp} \
-    && chown -R www-data:www-data /opt/render/project/src/tmp
-
-# 7️⃣ Verificar sintaxis de Nginx
-RUN nginx -t || cat /var/www/html/logs/error.log || true
-
-# 8️⃣ Ejecutar como www-data (no root)
+# 6️⃣ Ejecutar como www-data (no root)
 USER www-data
 
-# 9️⃣ Exponer puerto HTTP
+# 7️⃣ Exponer puerto HTTP
 EXPOSE 80
 
-# 🔟 Iniciar con Supervisor
+# 8️⃣ Iniciar con Supervisor
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisor.conf"]
