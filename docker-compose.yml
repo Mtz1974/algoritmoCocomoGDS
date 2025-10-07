@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+
+    # 1. Servicio de la Aplicación/PHP (php-fpm)
+    app:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        container_name: laravel-app
+        restart: unless-stopped
+        working_dir: /var/www/html
+        volumes:
+            # Monta tu código local en el contenedor
+            - .:/var/www/html
+            # Monta el archivo .env de tu proyecto en el contenedor
+            - ./.env:/var/www/html/.env
+        networks:
+            - laravel-network
+
+    # 2. Servicio del Servidor Web (Nginx)
+    web:
+        image: nginx:alpine
+        container_name: laravel-web
+        restart: unless-stopped
+        ports:
+            # Expone el puerto 80 del contenedor al puerto 8080 de tu máquina local
+            - 8080:80
+        volumes:
+            # Monta tu código (es necesario para servir archivos estáticos)
+            - .:/var/www/html
+            # Monta tu archivo de configuración de Nginx
+            - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+        depends_on:
+            - app
+        networks:
+            - laravel-network
+
+    # 3. Servicio de la Base de Datos (MySQL/MariaDB)
+    db:
+        image: mariadb:10.5
+        container_name: laravel-db
+        restart: unless-stopped
+        environment:
+            # IMPORTANTE: Cambia estos valores para que coincidan con tu archivo .env
+            MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+            MYSQL_DATABASE: ${DB_DATABASE}
+            MYSQL_USER: ${DB_USERNAME}
+            MYSQL_PASSWORD: ${DB_PASSWORD}
+        ports:
+            # Expone el puerto de la base de datos (opcional para desarrollo)
+            - 3306:3306
+        volumes:
+            # Persistencia de los datos de la base de datos
+            - dbdata:/var/lib/mysql
+        networks:
+            - laravel-network
+
+# Redes
+networks:
+    laravel-network:
+        driver: bridge
+
+# Volúmenes
+volumes:
+    dbdata:
+        driver: local
