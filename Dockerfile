@@ -70,14 +70,15 @@ COPY ./nginx/nginx.conf /etc/nginx/nginx.conf
 COPY ./nginx/supervisor.conf /etc/supervisor/conf.d/supervisor.conf
 RUN chmod 644 /etc/nginx/nginx.conf /etc/supervisor/conf.d/supervisor.conf
 
-# 5️⃣ FIX: Permisos de Nginx y logs (evita el “Permission denied”)
-RUN mkdir -p /var/lib/nginx/logs /var/lib/nginx/tmp/scgi \
-    && chown -R www-data:www-data /var/lib/nginx
+# 5️⃣ ✅ FIX DEFINITIVO: Permisos de Nginx y logs (Render / Alpine / Railway)
+# Evita el "Permission denied" en /var/lib/nginx/logs/error.log
+RUN mkdir -p /var/lib/nginx/logs /var/lib/nginx/tmp /var/tmp/nginx \
+    && touch /var/lib/nginx/logs/error.log \
+    && chmod -R 777 /var/lib/nginx /var/tmp/nginx
 
-# 6️⃣ FIX DEFINITIVO PARA RENDER:
-# Crear las rutas temporales accesibles para Nginx en /opt/render/project/src/tmp/
+# 6️⃣ Crear las rutas temporales requeridas por Render
 RUN mkdir -p /opt/render/project/src/tmp/{client_temp,proxy_temp,fastcgi_temp,uwsgi_temp} \
-    && chown -R www-data:www-data /opt/render/project/src/tmp
+    && chmod -R 777 /opt/render/project/src/tmp
 
 # 7️⃣ Verificar sintaxis de Nginx antes del deploy
 RUN nginx -t || cat /var/log/nginx/error.log || true
