@@ -30,13 +30,14 @@ COPY . .
 RUN composer install --no-dev --optimize-autoloader
 
 # ----------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------
 # ETAPA 2: PRODUCTION (Imagen final de producción)
 FROM php:8.2-fpm-alpine AS production
 
-# 💡 ASEGURAMOS USUARIO ROOT para instalar y gestionar archivos.
+# ASEGURAMOS USUARIO ROOT para instalar y gestionar archivos.
 USER root
 
-# 1. INSTALAR DEPENDENCIAS DE COMPILACIÓN Y EJECUCIÓN (soluciona todos los errores de librerías)
+# 1. INSTALAR DEPENDENCIAS DE COMPILACIÓN Y EJECUCIÓN
 RUN apk add --no-cache --virtual .build-deps \
     libzip-dev \
     libpng-dev \
@@ -44,7 +45,7 @@ RUN apk add --no-cache --virtual .build-deps \
     freetype-dev \
     oniguruma-dev \
     \
-    # 💡 CORRECCIÓN FINAL: Agregamos 'libzip' a las librerías de EJECUCIÓN que deben permanecer.
+    # LIBRERÍAS DE EJECUCIÓN (permanecen):
     && apk add --no-cache \
     nginx \
     supervisor \
@@ -66,7 +67,7 @@ COPY --from=builder /app /var/www/html
 
 # --- CONFIGURACIÓN DE PERMISOS Y USUARIOS (CRÍTICO) ---
 
-# 3. Dar permisos a storage y cache (Sin 'adduser' redundante)
+# 3. Dar permisos a storage y cache
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache \
     && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 
@@ -75,10 +76,8 @@ COPY ./nginx/nginx.conf /etc/nginx/nginx.conf
 COPY ./nginx/supervisor.conf /etc/supervisor/conf.d/supervisor.conf
 RUN chmod 644 /etc/nginx/nginx.conf /etc/supervisor/conf.d/supervisor.conf
 
-# 5. Crear el directorio de logs de Nginx
-RUN mkdir -p /var/log/nginx \
-    && touch /var/log/nginx/error.log \
-    && chown -R www-data:www-data /var/log/nginx
+# 5. ❌ PASO ELIMINADO: Ya no necesitamos crear logs manualmente.
+#    (El paso #22 anterior se elimina aquí)
 
 # 6. FINAL: Forzar la ejecución de procesos como www-data
 USER www-data
