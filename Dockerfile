@@ -36,7 +36,7 @@ FROM php:8.2-fpm-alpine AS production
 # 💡 ASEGURAMOS USUARIO ROOT para instalar y gestionar archivos.
 USER root
 
-# 1. INSTALAR DEPENDENCIAS DE COMPILACIÓN Y EJECUCIÓN (soluciona oniguruma y GD)
+# 1. INSTALAR DEPENDENCIAS DE COMPILACIÓN Y EJECUCIÓN (soluciona todos los errores de librerías)
 RUN apk add --no-cache --virtual .build-deps \
     libzip-dev \
     libpng-dev \
@@ -44,13 +44,14 @@ RUN apk add --no-cache --virtual .build-deps \
     freetype-dev \
     oniguruma-dev \
     \
-    # LIBRERÍAS DE EJECUCIÓN: No se eliminan.
+    # 💡 CORRECCIÓN FINAL: Agregamos 'libzip' a las librerías de EJECUCIÓN que deben permanecer.
     && apk add --no-cache \
     nginx \
     supervisor \
     libpng \
     libjpeg \
     freetype \
+    libzip \
     \
     # Instalar y configurar extensiones de PHP
     && docker-php-ext-install pdo_mysql mbstring zip exif pcntl \
