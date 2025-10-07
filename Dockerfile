@@ -82,6 +82,7 @@ RUN mkdir -p /var/www/html/tmp/client_temp \
     /var/www/html/tmp/proxy_temp \
     /var/www/html/tmp/fastcgi_temp \
     /var/www/html/tmp/uwsgi_temp \
+    /var/www/html/tmp/scgi_temp \
     && chown -R www-data:www-data /var/www/html/tmp
 # 6. DIAGNÓSTICO CRÍTICO: Prueba la configuración de Nginx y muestra errores de sintaxis
 # Si esta prueba pasa (syntax is ok), Nginx arrancará.
