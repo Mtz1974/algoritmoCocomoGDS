@@ -31,7 +31,7 @@ RUN apk add --no-cache --virtual .build-deps \
     && apk del .build-deps
 
 # Copiar el código final de la etapa de build
-COPY --from=build /app /var/www/html
+COPY --from=builder /app /var/www/html
 
 # --- CONFIGURACIÓN DE PERMISOS Y USUARIOS ---
 
